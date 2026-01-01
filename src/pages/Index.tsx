@@ -1,29 +1,56 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useExpenses } from '@/hooks/useExpenses';
+import { Loader2, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useExpensesDB, Expense } from '@/hooks/useExpensesDB';
 import { Header } from '@/components/Header';
 import { MonthSummary } from '@/components/MonthSummary';
 import { ExpenseCard } from '@/components/ExpenseCard';
 import { QuickAddExpense } from '@/components/QuickAddExpense';
 import { CategoryManager } from '@/components/CategoryManager';
+import { EditExpenseModal } from '@/components/EditExpenseModal';
 import { EmptyState } from '@/components/EmptyState';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [showCategoryManager, setShowCategoryManager] = useState(false);
-  
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+
   const {
     categories,
     expenses,
+    loading: dataLoading,
     addCategory,
     deleteCategory,
     addExpense,
+    updateExpense,
     deleteExpense,
     getCurrentMonthTotal,
     getCategoryBreakdown,
     getCategoryById,
     getMonthTotal,
-  } = useExpenses();
+  } = useExpensesDB();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  if (authLoading || dataLoading) {
+    return (
+      <div className="min-h-screen gradient-hero flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   const now = new Date();
   const currentMonth = now.getMonth();
@@ -53,8 +80,13 @@ const Index = () => {
     })
     .slice(0, 10);
 
-  const handleAddExpense = (amount: number, categoryId: string, note?: string) => {
-    addExpense(amount, categoryId, note);
+  const handleAddExpense = async (amount: number, categoryId: string, note?: string) => {
+    await addExpense(amount, categoryId, note);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
   };
 
   return (
@@ -63,7 +95,10 @@ const Index = () => {
       'pb-24' // Space for FAB
     )}>
       <div className="container max-w-md mx-auto px-4">
-        <Header onSettingsClick={() => setShowCategoryManager(true)} />
+        <Header 
+          onSettingsClick={() => setShowCategoryManager(true)}
+          onLogout={handleLogout}
+        />
 
         {/* Month Summary Card */}
         <section className="mt-4">
@@ -98,7 +133,8 @@ const Index = () => {
                   <ExpenseCard
                     key={expense.id}
                     expense={expense}
-                    category={getCategoryById(expense.categoryId)}
+                    category={getCategoryById(expense.category_id)}
+                    onClick={() => setEditingExpense(expense)}
                     onDelete={() => deleteExpense(expense.id)}
                     index={index}
                   />
@@ -120,7 +156,8 @@ const Index = () => {
                   <ExpenseCard
                     key={expense.id}
                     expense={expense}
-                    category={getCategoryById(expense.categoryId)}
+                    category={getCategoryById(expense.category_id)}
+                    onClick={() => setEditingExpense(expense)}
                     onDelete={() => deleteExpense(expense.id)}
                     index={index}
                   />
@@ -144,6 +181,15 @@ const Index = () => {
         categories={categories}
         onAddCategory={addCategory}
         onDeleteCategory={deleteCategory}
+      />
+
+      {/* Edit Expense Modal */}
+      <EditExpenseModal
+        expense={editingExpense}
+        categories={categories}
+        onClose={() => setEditingExpense(null)}
+        onUpdate={updateExpense}
+        onDelete={deleteExpense}
       />
     </div>
   );

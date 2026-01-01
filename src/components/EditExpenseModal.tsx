@@ -1,61 +1,70 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Check, X } from 'lucide-react';
-import { Category } from '@/hooks/useExpensesDB';
+import { X, Check, Trash2 } from 'lucide-react';
+import { Category, Expense } from '@/hooks/useExpensesDB';
 import { CategoryPill } from './CategoryPill';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
-interface QuickAddExpenseProps {
+interface EditExpenseModalProps {
+  expense: Expense | null;
   categories: Category[];
-  onAdd: (amount: number, categoryId: string, note?: string) => void;
+  onClose: () => void;
+  onUpdate: (id: string, updates: { amount?: number; category_id?: string; note?: string }) => void;
+  onDelete: (id: string) => void;
 }
 
-export function QuickAddExpense({ categories, onAdd }: QuickAddExpenseProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function EditExpenseModal({
+  expense,
+  categories,
+  onClose,
+  onUpdate,
+  onDelete,
+}: EditExpenseModalProps) {
   const [amount, setAmount] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [note, setNote] = useState('');
 
+  useEffect(() => {
+    if (expense) {
+      setAmount(String(expense.amount));
+      setSelectedCategory(expense.category_id);
+      setNote(expense.note || '');
+    }
+  }, [expense]);
+
   const handleSubmit = () => {
-    if (!amount || !selectedCategory) return;
-    
+    if (!expense || !amount || !selectedCategory) return;
+
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) return;
 
-    onAdd(numAmount, selectedCategory, note || undefined);
-    
-    // Reset form
-    setAmount('');
-    setSelectedCategory(null);
-    setNote('');
-    setIsOpen(false);
+    onUpdate(expense.id, {
+      amount: numAmount,
+      category_id: selectedCategory,
+      note: note || undefined,
+    });
+    onClose();
   };
 
-  const handleClose = () => {
-    setAmount('');
-    setSelectedCategory(null);
-    setNote('');
-    setIsOpen(false);
+  const handleDelete = () => {
+    if (!expense) return;
+    onDelete(expense.id);
+    onClose();
   };
 
   return (
-    <>
-      <AnimatePresence>
-        {isOpen && (
+    <AnimatePresence>
+      {expense && (
+        <>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40"
-            onClick={handleClose}
+            onClick={onClose}
           />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: 100, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -70,10 +79,10 @@ export function QuickAddExpense({ categories, onAdd }: QuickAddExpenseProps) {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-display font-semibold text-foreground">
-                Add Expense
+                Edit Expense
               </h3>
               <button
-                onClick={handleClose}
+                onClick={onClose}
                 className="p-2 rounded-full hover:bg-muted transition-colors"
               >
                 <X className="w-5 h-5 text-muted-foreground" />
@@ -136,38 +145,31 @@ export function QuickAddExpense({ categories, onAdd }: QuickAddExpenseProps) {
               />
             </div>
 
-            {/* Submit Button */}
-            <Button
-              onClick={handleSubmit}
-              disabled={!amount || !selectedCategory}
-              className={cn(
-                'w-full py-6 text-lg font-semibold',
-                'gradient-primary shadow-button',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
-            >
-              <Check className="w-5 h-5 mr-2" />
-              Add Expense
-            </Button>
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleDelete}
+                className="px-4 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="w-5 h-5" />
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={!amount || !selectedCategory}
+                className={cn(
+                  'flex-1 py-6 text-lg font-semibold',
+                  'gradient-primary shadow-button',
+                  'disabled:opacity-50 disabled:cursor-not-allowed'
+                )}
+              >
+                <Check className="w-5 h-5 mr-2" />
+                Save Changes
+              </Button>
+            </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* FAB Button */}
-      <motion.button
-        whileTap={{ scale: 0.9 }}
-        onClick={() => setIsOpen(true)}
-        className={cn(
-          'fixed bottom-6 right-6 z-30',
-          'w-14 h-14 rounded-full',
-          'gradient-primary shadow-button',
-          'flex items-center justify-center',
-          'text-primary-foreground',
-          isOpen && 'hidden'
-        )}
-      >
-        <Plus className="w-7 h-7" />
-      </motion.button>
-    </>
+        </>
+      )}
+    </AnimatePresence>
   );
 }

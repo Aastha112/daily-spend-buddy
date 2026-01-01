@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Category } from '@/types/expense';
+import { Category } from '@/hooks/useExpensesDB';
 import { cn } from '@/lib/utils';
 
 interface CategoryPillProps {

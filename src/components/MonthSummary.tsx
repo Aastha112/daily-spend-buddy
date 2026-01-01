@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { Category } from '@/types/expense';
+import { Category } from '@/hooks/useExpensesDB';
 import { cn } from '@/lib/utils';
 
 interface MonthSummaryProps {
@@ -56,7 +56,7 @@ export function MonthSummary({
             {formatAmount(total)}
           </p>
         </div>
-        {percentChange !== null && (
+        {percentChange !== null && previousMonthTotal > 0 && (
           <div className={cn(
             'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
             percentChange > 0 
