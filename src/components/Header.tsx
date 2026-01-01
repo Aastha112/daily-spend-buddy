@@ -1,11 +1,19 @@
 import { motion } from 'framer-motion';
-import { Calendar, Settings } from 'lucide-react';
+import { Calendar, Settings, LogOut } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface HeaderProps {
   onSettingsClick?: () => void;
+  onLogout?: () => void;
 }
 
-export function Header({ onSettingsClick }: HeaderProps) {
+export function Header({ onSettingsClick, onLogout }: HeaderProps) {
   const today = new Date();
   const formattedDate = today.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -29,12 +37,24 @@ export function Header({ onSettingsClick }: HeaderProps) {
         </div>
       </div>
       
-      <button
-        onClick={onSettingsClick}
-        className="p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors"
-      >
-        <Settings className="w-5 h-5 text-secondary-foreground" />
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors">
+            <Settings className="w-5 h-5 text-secondary-foreground" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onClick={onSettingsClick}>
+            <Settings className="w-4 h-4 mr-2" />
+            Manage Categories
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onLogout} className="text-destructive focus:text-destructive">
+            <LogOut className="w-4 h-4 mr-2" />
+            Log Out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </motion.header>
   );
 }
