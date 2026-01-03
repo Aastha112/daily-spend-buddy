@@ -1,1 +1,4 @@
 project_id = "zlcnysbhmeashsfvufmc"
+
+[functions.expense-chat]
+verify_jwt = false
