@@ -10,6 +10,7 @@ import { ExpenseCard } from '@/components/ExpenseCard';
 import { QuickAddExpense } from '@/components/QuickAddExpense';
 import { CategoryManager } from '@/components/CategoryManager';
 import { EditExpenseModal } from '@/components/EditExpenseModal';
+import { ChatBot } from '@/components/ChatBot';
 import { EmptyState } from '@/components/EmptyState';
 import { cn } from '@/lib/utils';
 
@@ -63,6 +64,25 @@ const Index = () => {
 
   const currentMonthTotal = getCurrentMonthTotal();
   const categoryBreakdown = getCategoryBreakdown(currentMonth, currentYear);
+
+  // Build expense summary for chatbot
+  const expenseSummary = `
+Current month total: $${currentMonthTotal.toFixed(2)}
+Previous month total: $${(previousMonthTotal || 0).toFixed(2)}
+Number of expenses this month: ${expenses.filter(exp => {
+    const date = new Date(exp.date);
+    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+  }).length}
+Categories: ${categories.map(c => `${c.name} (${c.icon})`).join(', ')}
+Category breakdown: ${Object.entries(categoryBreakdown).map(([catId, amount]) => {
+    const cat = categories.find(c => c.id === catId);
+    return cat ? `${cat.name}: $${amount.toFixed(2)}` : '';
+  }).filter(Boolean).join(', ')}
+Recent expenses: ${expenses.slice(0, 5).map(exp => {
+    const cat = categories.find(c => c.id === exp.category_id);
+    return `$${exp.amount} on ${cat?.name || 'Unknown'}${exp.note ? ` (${exp.note})` : ''}`;
+  }).join('; ')}
+  `.trim();
 
   // Get today's expenses
   const today = new Date().toISOString().split('T')[0];
@@ -191,6 +211,9 @@ const Index = () => {
         onUpdate={updateExpense}
         onDelete={deleteExpense}
       />
+
+      {/* ChatBot */}
+      <ChatBot expenseSummary={expenseSummary} />
     </div>
   );
 };
